@@ -1,0 +1,12 @@
+// Esquema dividido por módulo (prismaSchemaFolder). En la fase 01 solo existe la
+// configuración: ningún modelo de negocio se declara hasta la fase 02.
+// Cada fase posterior agrega su propio archivo <modulo>.prisma en esta carpeta.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

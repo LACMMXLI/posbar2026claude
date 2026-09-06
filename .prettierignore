@@ -1,0 +1,8 @@
+dist
+node_modules
+coverage
+.turbo
+pnpm-lock.yaml
+# Documentos maestros: se editan a mano, no se reformatean
+DEVELOPMENT_PLAN.md
+docs/phases/
