@@ -1,6 +1,10 @@
 # Imagen compartida por pos-api y pos-worker (mismo build, distinto comando).
 # Construir desde la raíz del repo:  docker build -f deploy/api/Dockerfile .
 FROM node:22-alpine AS base
+# El motor de consultas de Prisma (binario nativo) enlaza contra libssl; node:22-alpine
+# no lo trae. Sin esto, `prisma generate` puede detectar mal el binaryTarget o el
+# binario descargado falla en runtime con "libssl.so no encontrado".
+RUN apk add --no-cache openssl
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 WORKDIR /repo
 
@@ -16,7 +20,12 @@ COPY tsconfig.base.json ./
 COPY packages/contracts packages/contracts
 COPY packages/db packages/db
 COPY apps/api apps/api
-RUN pnpm --filter @posbar/contracts build \
+# `deps` instaló con --ignore-scripts: @prisma/client queda como stub sin el
+# cliente generado (no exporta PrismaClient/Prisma) hasta correr `prisma
+# generate`. Se hace explícito aquí —después de copiar packages/db/prisma,
+# antes de compilar packages/db— en vez de depender del postinstall.
+RUN pnpm --filter @posbar/db run prisma:generate \
+ && pnpm --filter @posbar/contracts build \
  && pnpm --filter @posbar/db build \
  && pnpm --filter @posbar/api build \
  && pnpm --filter @posbar/api deploy --prod --legacy /out
@@ -24,6 +33,8 @@ RUN pnpm --filter @posbar/contracts build \
 FROM node:22-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
+# El motor de Prisma copiado desde /out necesita libssl en runtime, no solo en build.
+RUN apk add --no-cache openssl
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=build --chown=app:app /out ./
 USER app
