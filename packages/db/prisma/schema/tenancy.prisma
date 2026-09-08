@@ -1,0 +1,112 @@
+// Núcleo multi-tenant (fase 02). `business_id` + RLS son la frontera de tenant;
+// ver docs/MULTITENANCY.md. El reino de plataforma (platform_users, plans) es
+// solo esqueleto aquí: sin autenticación ni lógica hasta las fases 03-04.
+
+enum BusinessStatus {
+  ACTIVE
+  SUSPENDED
+
+  @@map("business_status")
+}
+
+model Business {
+  id        String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  slug      String         @unique
+  status    BusinessStatus @default(ACTIVE)
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  branches      Branch[]
+  settings      BusinessSettings?
+  subscriptions Subscription[]
+
+  @@map("businesses")
+}
+
+/// Toda tabla operativa a partir de aquí lleva business_id + RLS (ver migración
+/// init_tenancy). Es la convención que hereda cada fase posterior sin discutirla.
+model Branch {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  businessId String   @map("business_id") @db.Uuid
+  name       String
+  code       String
+  timezone   String   @default("America/Mexico_City")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, code])
+  @@index([businessId])
+  @@map("branches")
+}
+
+model BusinessSettings {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  businessId String   @unique @map("business_id") @db.Uuid
+  currency   String   @default("MXN")
+  timezone   String   @default("America/Mexico_City")
+  taxId      String?  @map("tax_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("business_settings")
+}
+
+// --- Reino de plataforma (esqueleto de entidades; sin lógica hasta fase 03/04) ---
+
+enum PlatformRole {
+  SUPERADMIN
+
+  @@map("platform_role")
+}
+
+model PlatformUser {
+  id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String       @unique
+  name      String
+  role      PlatformRole @default(SUPERADMIN)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  @@map("platform_users")
+}
+
+model Plan {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code       String   @unique
+  name       String
+  priceCents Int      @map("price_cents")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  CANCELED
+
+  @@map("subscription_status")
+}
+
+model Subscription {
+  id         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  businessId String             @map("business_id") @db.Uuid
+  planId     String             @map("plan_id") @db.Uuid
+  status     SubscriptionStatus @default(TRIALING)
+  startedAt  DateTime           @default(now()) @map("started_at")
+  endedAt    DateTime?          @map("ended_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  plan     Plan     @relation(fields: [planId], references: [id])
+
+  @@index([businessId])
+  @@map("subscriptions")
+}

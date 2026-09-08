@@ -1,3 +1,7 @@
-// Punto de entrada de @posbar/db. En la fase 01 no exporta cliente alguno:
-// el acceso a datos con contexto de tenant (TenantPrismaService) nace en la fase 02.
-export const DB_PACKAGE = '@posbar/db' as const;
+// Punto de entrada de @posbar/db. Reexporta el cliente Prisma generado para que
+// apps/api lo consuma sin depender directamente de @prisma/client. El único
+// acceso con contexto de tenant (TenantPrismaService, SET LOCAL + extensión que
+// inyecta business_id) vive en apps/api/src/modules/tenancy/ — ver
+// docs/MULTITENANCY.md. Prohibido instanciar PrismaClient crudo fuera de ahí.
+export { PrismaClient, Prisma } from '@prisma/client';
+export * from '@prisma/client';

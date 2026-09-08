@@ -1,0 +1,2 @@
+# No editar a mano. Fija el proveedor de base de datos de las migraciones.
+provider = "postgresql"

@@ -4,6 +4,9 @@ export interface Env {
   port: number;
   logLevel: string;
   databaseUrl: string;
+  /** Rol de aplicación (sin BYPASSRLS): la única cadena de conexión que usa
+   * TenantPrismaService. `databaseUrl` queda para migraciones/semillas. */
+  databaseAppUrl: string;
   redisUrl: string;
   corsOrigin: string;
   version: string;
@@ -22,6 +25,7 @@ export function loadEnv(): Env {
     port: Number(process.env['API_PORT'] ?? process.env['PORT'] ?? 3000),
     logLevel: process.env['LOG_LEVEL'] ?? (nodeEnv === 'production' ? 'info' : 'debug'),
     databaseUrl: required('DATABASE_URL'),
+    databaseAppUrl: required('DATABASE_APP_URL'),
     redisUrl: required('REDIS_URL'),
     corsOrigin: process.env['CORS_ORIGIN'] ?? '*',
     version: process.env['APP_VERSION'] ?? process.env['npm_package_version'] ?? '0.1.0',
