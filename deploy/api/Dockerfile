@@ -23,13 +23,15 @@ COPY apps/api apps/api
 # `deps` instaló con --ignore-scripts: @prisma/client queda como stub sin el
 # cliente generado (no exporta PrismaClient/Prisma) hasta correr `prisma
 # generate`. Se hace explícito aquí —después de copiar packages/db/prisma,
-# antes de compilar packages/db— en vez de depender del postinstall.
+# antes de compilar packages/db— en vez de depender del postinstall. `deploy
+# --prod` conserva el cliente, pero excluye la CLI; por eso `dlx` la ejecuta
+# de forma efímera para generar directamente en el árbol runtime.
 RUN pnpm --filter @posbar/db run prisma:generate \
  && pnpm --filter @posbar/contracts build \
  && pnpm --filter @posbar/db build \
  && pnpm --filter @posbar/api build \
  && pnpm --filter @posbar/api deploy --prod --legacy /out \
- && pnpm --dir /out exec prisma generate --schema node_modules/@posbar/db/prisma/schema
+ && pnpm --dir /out dlx prisma@6.19.3 generate --schema node_modules/@posbar/db/prisma/schema
 
 FROM node:22-alpine AS runtime
 ENV NODE_ENV=production
