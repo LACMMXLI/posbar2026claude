@@ -25,13 +25,15 @@ COPY apps/api apps/api
 # generate`. Se hace explícito aquí —después de copiar packages/db/prisma,
 # antes de compilar packages/db— en vez de depender del postinstall. `deploy
 # --prod` conserva el cliente, pero excluye la CLI; por eso `dlx` la ejecuta
-# de forma efímera para generar directamente en el árbol runtime.
+# de forma efímera. El esquema se copia junto al artefacto porque `deploy` no
+# incluye archivos no requeridos por el runtime de Node.
 RUN pnpm --filter @posbar/db run prisma:generate \
  && pnpm --filter @posbar/contracts build \
  && pnpm --filter @posbar/db build \
  && pnpm --filter @posbar/api build \
  && pnpm --filter @posbar/api deploy --prod --legacy /out \
- && pnpm --dir /out dlx prisma@6.19.3 generate --schema node_modules/@posbar/db/prisma/schema
+ && cp -R packages/db/prisma /out/prisma \
+ && pnpm --dir /out dlx prisma@6.19.3 generate --schema /out/prisma/schema
 
 FROM node:22-alpine AS runtime
 ENV NODE_ENV=production
