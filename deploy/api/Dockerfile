@@ -28,7 +28,8 @@ RUN pnpm --filter @posbar/db run prisma:generate \
  && pnpm --filter @posbar/contracts build \
  && pnpm --filter @posbar/db build \
  && pnpm --filter @posbar/api build \
- && pnpm --filter @posbar/api deploy --prod --legacy /out
+ && pnpm --filter @posbar/api deploy --prod --legacy /out \
+ && pnpm --dir /out exec prisma generate --schema node_modules/@posbar/db/prisma/schema
 
 FROM node:22-alpine AS runtime
 ENV NODE_ENV=production
